@@ -13,6 +13,7 @@ export default function OCRQueuePanel() {
   const ocrProvider = useAppStore(selectOcrProvider);
   const setOcrResult = useAppStore(s => s.setOcrResult);
   const setAllOcrResults = useAppStore(s => s.setAllOcrResults);
+  const setOcrConfig = useAppStore(s => s.setOcrConfig);
 
   const excludedSections = useAppStore(selectExcludedSections);
   const excludedPages = useAppStore(s => s.excludedPages);
@@ -158,9 +159,31 @@ export default function OCRQueuePanel() {
 
   return (
     <div className="bg-background-secondary p-4 border border-border-tertiary rounded-lg h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-sm font-medium">Processing Queue</h3>
-        <div className="flex gap-2">
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="text-sm font-medium">Processing Queue</h3>
+          <div className="flex items-center gap-2 border border-border-tertiary rounded px-2 py-1 bg-background-primary">
+            <label className="text-[10px] font-medium text-text-secondary uppercase">Concurrency</label>
+            <input 
+              type="number" 
+              min="1" max="10" 
+              value={ocrConfig.concurrency} 
+              onChange={e => setOcrConfig({ concurrency: parseInt(e.target.value) || 1 })}
+              className="w-10 bg-transparent text-xs focus:outline-none text-center"
+            />
+          </div>
+          <div className="flex items-center gap-2 border border-border-tertiary rounded px-2 py-1 bg-background-primary">
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={ocrConfig.includeDividers !== false}
+                onChange={e => setOcrConfig({ includeDividers: e.target.checked })}
+              />
+              <span className="text-[10px] font-medium text-text-secondary uppercase">Page Dividers</span>
+            </label>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <button 
             onClick={handleClearCache}
             disabled={Object.keys(ocrResults).length === 0}
@@ -251,6 +274,11 @@ export default function OCRQueuePanel() {
                 <div className="text-[10px] text-text-secondary mt-1 flex justify-between">
                   <span>Page {p.page} of {sec.endPage}</span>
                   {jobState === 'paused' && <span className="text-yellow-600 font-medium animate-pulse">Paused</span>}
+                </div>
+              )}
+              {result?.status === 'error' && (
+                <div className="text-[10px] text-red-600 font-medium mt-1.5 p-1.5 bg-red-50 rounded border border-red-100">
+                  <span className="font-bold">Error:</span> {result.error}
                 </div>
               )}
             </div>

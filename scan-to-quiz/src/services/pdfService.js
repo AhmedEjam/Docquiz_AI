@@ -136,11 +136,24 @@ export function autoDetectSplits(pages) {
     .map(p => p.num - 1);
 }
 
-export function buildSections(pages, splitPoints) {
+export function buildSections(pages, splitPoints, existingSections = []) {
   const pts = [...new Set([0, ...splitPoints, pages.length])].sort((a,b) => a-b);
   let lastChapterNum = 0;
 
   return pts.slice(0,-1).map((start, i) => {
+    const startPageNum = start + 1;
+    const endPageNum = pts[i+1];
+    
+    // Preserve existing section if it starts at the exact same page
+    const existing = existingSections.find(s => s.startPage === startPageNum);
+    if (existing) {
+      lastChapterNum = existing.chapterNum;
+      return {
+        ...existing,
+        endPage: endPageNum
+      };
+    }
+
     // Try to auto-detect chapter number from the first page of the section
     const firstPageText = pages[start].text.trim().split('\n')[0];
     
@@ -159,27 +172,41 @@ export function buildSections(pages, splitPoints) {
     }
 
     return {
-      id:         'sec-' + (i+1),
+      id:         'sec-start-' + startPageNum,
       name:       'Section ' + (i+1),
-      startPage:  start + 1,
-      endPage:    pts[i+1],
+      startPage:  startPageNum,
+      endPage:    endPageNum,
       chapterNum: lastChapterNum,
     };
   });
 }
 
-export async function exportPdfSubset(file, pagesToKeep, outputFilename) {
+export async function exportPdfSubset(file, pagesToKeep, outputFilename, method = 'preserve') {
+  console.log(`[Export PDF] Starting export. Method: ${method}, Output: ${outputFilename}, Pages:`, pagesToKeep);
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer);
-  const newPdf = await PDFDocument.create();
   
-  // pdf-lib uses 0-indexed page numbers, our UI uses 1-indexed
-  const pageIndices = pagesToKeep.map(p => p - 1);
-  const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
+  let pdfBytes;
+  if (method === 'preserve') {
+    // Create a set of zero-indexed pages to keep
+    const keepSet = new Set(pagesToKeep.map(p => p - 1));
+    
+    // Iterate backwards so page indices don't shift during deletion
+    const totalPages = pdfDoc.getPageCount();
+    for (let i = totalPages - 1; i >= 0; i--) {
+      if (!keepSet.has(i)) {
+        pdfDoc.removePage(i);
+      }
+    }
+    pdfBytes = await pdfDoc.save();
+  } else {
+    const newPdf = await PDFDocument.create();
+    const pageIndices = pagesToKeep.map(p => p - 1);
+    const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
+    copiedPages.forEach(page => newPdf.addPage(page));
+    pdfBytes = await newPdf.save();
+  }
   
-  copiedPages.forEach(page => newPdf.addPage(page));
-  
-  const pdfBytes = await newPdf.save();
   const blob = new Blob([pdfBytes], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   

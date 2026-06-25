@@ -5,7 +5,7 @@ import useAppStore, {
 } from '../../store/useAppStore';
 import { renderPage, buildSections } from '../../services/pdfService';
 
-function Thumbnail({ pageNum, scale }) {
+function Thumbnail({ pageNum, scale, onPreview }) {
   const [src, setSrc] = useState(null);
   const imgRef = useRef(null);
 
@@ -36,14 +36,8 @@ function Thumbnail({ pageNum, scale }) {
           src={src} 
           alt={`Page ${pageNum}`} 
           className="w-full h-auto object-contain cursor-pointer hover:opacity-80 transition-opacity" 
-          onClick={() => {
-            const newWindow = window.open();
-            if (newWindow) {
-              newWindow.document.write(`<html><head><title>Page ${pageNum} Preview</title></head><body style="margin:0; background:#0e1111; display:flex; justify-content:center; align-items:center; min-height:100vh;"><img src="${src}" style="max-width:100%; max-height:100vh; object-fit:contain;" /></body></html>`);
-              newWindow.document.close();
-            }
-          }}
-          title="Click to view full size in new tab"
+          onClick={() => onPreview(src)}
+          title="Click to view full size preview"
         />
       ) : (
         <span>Loading...</span>
@@ -60,6 +54,8 @@ export default function PdfPageGrid() {
   const excludedPages = useAppStore(selectExcludedPages);
   const sections = useAppStore(selectSections);
   const excludedSections = useAppStore(selectExcludedSections);
+  
+  const [previewImage, setPreviewImage] = useState(null);
   
   const setSplitPoints = useAppStore(s => s.setSplitPoints);
   const setSections = useAppStore(s => s.setSections);
@@ -78,7 +74,7 @@ export default function PdfPageGrid() {
     }
     const sortedPoints = Array.from(newPoints).sort((a, b) => a - b);
     setSplitPoints(sortedPoints);
-    setSections(buildSections(pages, sortedPoints));
+    setSections(buildSections(pages, sortedPoints, sections));
   };
 
   if (pages.length === 0) return null;
@@ -131,7 +127,7 @@ export default function PdfPageGrid() {
                 </div>
               )}
               <div className={`relative group border-2 rounded overflow-hidden shadow-sm bg-background-primary flex flex-col items-center transition-opacity ${isExcluded ? 'opacity-30 grayscale' : ''} ${isSplitAfter ? 'border-text-info mb-2' : 'border-border-tertiary'}`}>
-                <Thumbnail pageNum={p.num} scale={thumbScale} />
+                <Thumbnail pageNum={p.num} scale={thumbScale} onPreview={setPreviewImage} />
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
                     onClick={() => togglePageExclude(p.num)}
@@ -157,6 +153,20 @@ export default function PdfPageGrid() {
           );
         })}
       </div>
+
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 cursor-zoom-out backdrop-blur-sm transition-all"
+          onClick={() => setPreviewImage(null)}
+          title="Click anywhere to close"
+        >
+          <img 
+            src={previewImage} 
+            className="max-w-full max-h-full object-contain shadow-2xl rounded border border-white/10"
+            alt="Full screen preview" 
+          />
+        </div>
+      )}
     </div>
   );
 }

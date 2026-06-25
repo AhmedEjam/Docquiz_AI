@@ -5,6 +5,7 @@ export default function AIConfigPanel({ title, config, setConfig }) {
   const [showKey, setShowKey] = useState(false);
   const [testStatus, setTestStatus] = useState(null);
   const [testMsg, setTestMsg] = useState('');
+  const [availableModels, setAvailableModels] = useState([]);
 
   const handleTestConnection = async () => {
     setTestStatus('loading');
@@ -14,16 +15,48 @@ export default function AIConfigPanel({ title, config, setConfig }) {
       const headers = {};
       if (config.apiKey) headers['Authorization'] = `Bearer ${config.apiKey}`;
       
-      const res = await fetch(`${baseUrl}/models`, { headers });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch(`${baseUrl}/models`, { headers, signal: controller.signal });
+      clearTimeout(timeoutId);
+      
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       
       const data = await res.json();
-      const count = data.data?.length || 0;
+      const models = data.data?.map(m => m.id || m.name) || [];
+      setAvailableModels(models);
       setTestStatus('ok');
-      setTestMsg(`Connected successfully (${count} models found)`);
+      setTestMsg(`Connected successfully (${models.length} models found. Check dropdown)`);
     } catch (err) {
       setTestStatus('error');
       setTestMsg(`Connection failed: ${err.message}`);
+      setAvailableModels([]);
+    }
+  };
+
+  const handlePingModel = async () => {
+    setTestStatus('loading');
+    setTestMsg('');
+    try {
+      const { chatComplete } = await import('../../services/aiClient');
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const res = await chatComplete(
+        config, 
+        'You are a testing bot.', 
+        'Reply with the exact word "OK".', 
+        { retries: 0, signal: controller.signal }
+      );
+      clearTimeout(timeoutId);
+
+      setTestStatus('ok');
+      setTestMsg(`Ping successful! Model replied: "${res.trim()}"`);
+    } catch (err) {
+      setTestStatus('error');
+      setTestMsg(`Ping failed: ${err.message}`);
     }
   };
 
@@ -101,19 +134,41 @@ export default function AIConfigPanel({ title, config, setConfig }) {
         <div>
           <label className="block text-[10px] font-medium text-text-secondary uppercase mb-1">Model Name</label>
           <div className="flex gap-2">
-            <input 
-              type="text" 
-              value={config.model} 
-              onChange={e => setConfig({ model: e.target.value })}
-              placeholder={currentProvider.defaultModel}
-              className="w-full p-2 bg-background-primary border border-border-tertiary rounded text-xs focus:outline-none focus:border-border-info font-mono text-[10px]"
-            />
+            {availableModels.length > 0 ? (
+              <select 
+                value={config.model} 
+                onChange={e => setConfig({ model: e.target.value })}
+                className="w-full p-2 bg-background-primary border border-border-tertiary rounded text-xs focus:outline-none focus:border-border-info font-mono text-[10px]"
+              >
+                {!availableModels.includes(config.model) && <option value={config.model}>{config.model}</option>}
+                {availableModels.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            ) : (
+              <input 
+                type="text" 
+                value={config.model} 
+                onChange={e => setConfig({ model: e.target.value })}
+                placeholder={currentProvider.defaultModel}
+                className="w-full p-2 bg-background-primary border border-border-tertiary rounded text-xs focus:outline-none focus:border-border-info font-mono text-[10px]"
+              />
+            )}
             <button 
               onClick={handleTestConnection}
               disabled={testStatus === 'loading'}
-              className="px-3 py-1 bg-background-primary border border-border-tertiary text-xs rounded hover:bg-background-secondary whitespace-nowrap"
+              className="px-2 py-1 bg-background-primary border border-border-tertiary text-[10px] uppercase font-medium rounded hover:bg-background-secondary whitespace-nowrap"
+              title="Fetch all available models from provider"
             >
-              Test
+              List
+            </button>
+            <button 
+              onClick={handlePingModel}
+              disabled={testStatus === 'loading' || !config.model}
+              className="px-2 py-1 bg-background-primary border border-border-tertiary text-[10px] uppercase font-medium rounded hover:bg-background-secondary whitespace-nowrap"
+              title="Send a tiny test prompt to the selected model"
+            >
+              Ping
             </button>
           </div>
           {testStatus && (

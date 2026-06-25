@@ -20,6 +20,7 @@ export default function SectionManager() {
 
   const [chunkSize, setChunkSize] = useState('');
   const [exportingId, setExportingId] = useState(null);
+  const [exportMethod, setExportMethod] = useState('preserve');
 
   const handleExportSection = async (sec) => {
     if (!originalPdfFile) return;
@@ -30,8 +31,11 @@ export default function SectionManager() {
         if (!excludedPages.has(i)) pagesToKeep.push(i);
       }
       if (pagesToKeep.length > 0) {
-        const name = `${exportFilename}_${sec.name.replace(/\s+/g, '_')}.pdf`;
-        await exportPdfSubset(originalPdfFile, pagesToKeep, name);
+        const baseName = exportFilename || 'Document';
+        const name = `${baseName}_${sec.name.replace(/\s+/g, '_')}.pdf`;
+        await exportPdfSubset(originalPdfFile, pagesToKeep, name, exportMethod);
+      } else {
+        alert("All pages in this section are excluded. Nothing to export.");
       }
     } catch (err) {
       console.error(err);
@@ -53,7 +57,10 @@ export default function SectionManager() {
       });
       if (pagesToKeep.length > 0) {
         const uniquePages = [...new Set(pagesToKeep)].sort((a, b) => a - b);
-        await exportPdfSubset(originalPdfFile, uniquePages, `${exportFilename}_Exported.pdf`);
+        const baseName = exportFilename || 'Document';
+        await exportPdfSubset(originalPdfFile, uniquePages, `${baseName}_Exported.pdf`, exportMethod);
+      } else {
+        alert("All sections or pages are excluded. Nothing to export.");
       }
     } catch (err) {
       console.error(err);
@@ -65,7 +72,7 @@ export default function SectionManager() {
   const handleAutoSplit = () => {
     const points = autoDetectSplits(pages);
     setSplitPoints(points);
-    setSections(buildSections(pages, points));
+    setSections(buildSections(pages, points, sections));
   };
 
   const handleFixedSplit = () => {
@@ -77,7 +84,7 @@ export default function SectionManager() {
       points.push(i);
     }
     setSplitPoints(points);
-    setSections(buildSections(pages, points));
+    setSections(buildSections(pages, points, sections));
   };
 
   const handleRename = (id, newName) => {
@@ -85,7 +92,8 @@ export default function SectionManager() {
   };
 
   const handleChapterNumChange = (id, newNum) => {
-    setSections(sections.map(s => s.id === id ? { ...s, chapterNum: parseInt(newNum) || s.chapterNum } : s));
+    const val = parseInt(newNum, 10);
+    setSections(sections.map(s => s.id === id ? { ...s, chapterNum: isNaN(val) ? 0 : val } : s));
   };
 
   const handleDelete = (idx) => {
@@ -109,6 +117,31 @@ export default function SectionManager() {
     setSections(newSections);
   };
 
+  const handleSmartSequence = (startIndex) => {
+    const startSec = sections[startIndex];
+    const match = startSec.name.trim().match(/^(.*?)(\d+)$/);
+    if (!match) {
+      alert("Could not detect a trailing number in this section's name (e.g. 'Chapter 1'). Please rename it first.");
+      return;
+    }
+
+    const prefix = match[1];
+    let currentNum = parseInt(match[2], 10);
+
+    const newSections = [...sections];
+    for (let i = startIndex + 1; i < newSections.length; i++) {
+      if (!excludedSections.has(newSections[i].id)) {
+        currentNum++;
+        newSections[i] = { 
+          ...newSections[i], 
+          name: `${prefix}${currentNum}`, 
+          chapterNum: currentNum 
+        };
+      }
+    }
+    setSections(newSections);
+  };
+
   if (pages.length === 0) return null;
 
   return (
@@ -116,7 +149,7 @@ export default function SectionManager() {
       <h3 className="text-sm font-medium mb-4">Section Manager</h3>
       
       {originalPdfFile && sections.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-4 space-y-2">
           <button 
             onClick={handleExportBulk}
             disabled={exportingId === 'bulk'}
@@ -124,6 +157,17 @@ export default function SectionManager() {
           >
             {exportingId === 'bulk' ? 'Exporting...' : '⬇️ Export Included as PDF'}
           </button>
+          <div className="flex items-center justify-between text-[10px] bg-background-primary px-2 py-1 rounded border border-border-tertiary">
+            <span className="text-text-secondary font-medium">Export Method:</span>
+            <select 
+              value={exportMethod} 
+              onChange={(e) => setExportMethod(e.target.value)}
+              className="bg-transparent text-text-primary focus:outline-none"
+            >
+              <option value="preserve">Preserve Annotations</option>
+              <option value="clean">Clean Document (Removes Annotations)</option>
+            </select>
+          </div>
         </div>
       )}
       
@@ -175,7 +219,17 @@ export default function SectionManager() {
             </div>
             <div className="space-y-2">
               <div>
-                <label className="block text-[10px] text-text-secondary mb-1">Name</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-[10px] text-text-secondary">Name</label>
+                  <button 
+                    onClick={() => handleSmartSequence(idx)}
+                    disabled={isExcluded}
+                    className="text-[10px] text-text-info hover:underline disabled:opacity-30 disabled:hover:no-underline flex items-center gap-1"
+                    title="Automatically sequence names and numbers for all subsequent included sections"
+                  >
+                    🪄 Sequence
+                  </button>
+                </div>
                 <input 
                   type="text" 
                   value={sec.name} 

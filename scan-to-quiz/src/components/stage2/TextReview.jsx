@@ -85,16 +85,6 @@ export default function TextReview() {
       <div className="flex justify-between items-center px-1">
         <div className="flex items-center gap-4">
           <h3 className="text-sm font-medium">Extracted Text Review</h3>
-          <div className="flex items-center gap-2">
-            <label className="text-[10px] font-medium text-text-secondary uppercase">Refine Model:</label>
-            <input 
-              type="text" 
-              value={ocrReviewConfig.model || ''} 
-              onChange={e => useAppStore.getState().setOcrReviewConfig({ model: e.target.value })}
-              placeholder={ocrProvider.model}
-              className="w-32 px-2 py-1 bg-background-primary border border-border-tertiary rounded text-[10px] focus:outline-none focus:border-border-info font-mono"
-            />
-          </div>
         </div>
         {hasExtractedTests && (
           <button 

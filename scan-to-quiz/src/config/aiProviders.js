@@ -4,7 +4,7 @@ export const AI_PROVIDERS = [
     name: 'Ollama (Local)',
     defaultBaseUrl: 'http://localhost:11434/v1',
     requiresKey: false,
-    defaultModel: 'llama3.2-vision'
+    defaultModel: 'glm-ocr'
   },
   {
     id: 'google',

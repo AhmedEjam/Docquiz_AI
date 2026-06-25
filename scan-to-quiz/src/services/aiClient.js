@@ -48,7 +48,7 @@ export async function generateWithImage(config, prompt, images, options = {}) {
   for (const imgBase64 of images) {
     content.push({
       type: 'image_url',
-      image_url: { url: `data:image/jpeg;base64,${imgBase64}` }
+      image_url: { url: `data:image/png;base64,${imgBase64}` }
     });
   }
 

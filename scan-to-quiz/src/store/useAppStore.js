@@ -47,7 +47,7 @@ const useAppStore = create((set) => ({
   }),
 
   // Stage 2
-  ocrConfig: { concurrency: 2, includeDividers: true },
+  ocrConfig: { concurrency: 2, includeDividers: false },
   ocrPrompt: OCR_DEFAULT,
   ocrReviewConfig: { model: 'llama3.1' },
   ocrReviewPrompt: "You are an expert editor. Review the following OCR extracted text. Fix any obvious typos, artifact glitches, or formatting errors. Do not change the meaning or remove content. Output ONLY the corrected text without any chat wrap or introductions.",
