@@ -4,7 +4,7 @@ function sanitize(text) {
   return text.replace(CONTROL_CHARS, '').trim();
 }
 
-export function chunkText(text, maxChars = 12000) {
+export function chunkText(text, maxChars = 10000, overlapChars = 500) {
   const pages = text.split(/--- PAGE \d+ ---/);
   const chunks = [];
   let cur = '';
@@ -12,9 +12,10 @@ export function chunkText(text, maxChars = 12000) {
   for (const p of pages) {
     if ((cur + p).length > maxChars && cur) {
       chunks.push(sanitize(cur));
-      cur = p;
+      // Overlap: keep the last N characters of the previous chunk to avoid cutting questions
+      cur = cur.slice(-overlapChars) + '\n' + p;
     } else {
-      cur += '\n' + p;
+      cur += (cur ? '\n' : '') + p;
     }
   }
   

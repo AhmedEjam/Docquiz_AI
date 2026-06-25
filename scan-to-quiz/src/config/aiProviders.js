@@ -4,7 +4,14 @@ export const AI_PROVIDERS = [
     name: 'Ollama (Local)',
     defaultBaseUrl: 'http://localhost:11434/v1',
     requiresKey: false,
-    defaultModel: 'glm-ocr'
+    defaultModel: 'glm-ocr-strict:latest'
+  },
+  {
+    id: 'ollama-server',
+    name: 'Ollama (Server)',
+    defaultBaseUrl: 'http://192.168.1.150:11434/v1',
+    requiresKey: false,
+    defaultModel: 'glm-ocr-strict:latest'
   },
   {
     id: 'google',
@@ -12,6 +19,14 @@ export const AI_PROVIDERS = [
     defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
     requiresKey: true,
     defaultModel: 'gemini-2.5-flash'
+  },
+
+  {
+    id: 'groq',
+    name: 'Groq (LPU)',
+    defaultBaseUrl: 'https://api.groq.com/openai/v1',
+    requiresKey: true,
+    defaultModel: 'llama-3.3-70b-versatile'
   },
   {
     id: 'openrouter',
@@ -40,6 +55,34 @@ export const AI_PROVIDERS = [
     defaultBaseUrl: 'https://api.together.xyz/v1',
     requiresKey: true,
     defaultModel: 'meta-llama/Llama-3-vision-alpha'
+  },
+  {
+    id: 'cohere',
+    name: 'Cohere',
+    defaultBaseUrl: 'https://api.cohere.ai/v1',
+    requiresKey: true,
+    defaultModel: 'command-r-plus'
+  },
+  {
+    id: 'cerebras',
+    name: 'Cerebras',
+    defaultBaseUrl: 'https://api.cerebras.ai/v1',
+    requiresKey: true,
+    defaultModel: 'llama3.1-70b'
+  },
+  {
+    id: 'huggingface',
+    name: 'Hugging Face Inference',
+    defaultBaseUrl: 'https://api-inference.huggingface.co/v1',
+    requiresKey: true,
+    defaultModel: 'meta-llama/Meta-Llama-3-8B-Instruct'
+  },
+  {
+    id: 'zenmux',
+    name: 'Zenmux',
+    defaultBaseUrl: 'https://zenmux.ai/api/v1',
+    requiresKey: true,
+    defaultModel: 'deepseek/deepseek-chat'
   },
   {
     id: 'custom',

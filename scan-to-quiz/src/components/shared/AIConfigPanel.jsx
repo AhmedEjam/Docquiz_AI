@@ -7,6 +7,12 @@ export default function AIConfigPanel({ title, config, setConfig }) {
   const [testMsg, setTestMsg] = useState('');
   const [availableModels, setAvailableModels] = useState([]);
 
+  // Test Call states
+  const [showTestPanel, setShowTestPanel] = useState(false);
+  const [testPrompt, setTestPrompt] = useState('Tell me a medical fact in 2 sentences.');
+  const [testResponse, setTestResponse] = useState('');
+  const [isTestingCall, setIsTestingCall] = useState(false);
+
   const handleTestConnection = async () => {
     setTestStatus('loading');
     setTestMsg('');
@@ -21,7 +27,10 @@ export default function AIConfigPanel({ title, config, setConfig }) {
       const res = await fetch(`${baseUrl}/models`, { headers, signal: controller.signal });
       clearTimeout(timeoutId);
       
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status} ${errText}`);
+      }
       
       const data = await res.json();
       const models = data.data?.map(m => m.id || m.name) || [];
@@ -57,6 +66,28 @@ export default function AIConfigPanel({ title, config, setConfig }) {
     } catch (err) {
       setTestStatus('error');
       setTestMsg(`Ping failed: ${err.message}`);
+    }
+  };
+
+  const handleTestCall = async () => {
+    if (!testPrompt.trim()) return;
+    setIsTestingCall(true);
+    setTestResponse('');
+    try {
+      const { chatComplete } = await import('../../services/aiClient');
+      
+      const res = await chatComplete(
+        config, 
+        'You are a helpful assistant.', 
+        testPrompt, 
+        { retries: 0 } // no abort controller to let generation finish
+      );
+      
+      setTestResponse(res || 'No response returned.');
+    } catch (err) {
+      setTestResponse(`Error: ${err.message}`);
+    } finally {
+      setIsTestingCall(false);
     }
   };
 
@@ -170,6 +201,13 @@ export default function AIConfigPanel({ title, config, setConfig }) {
             >
               Ping
             </button>
+            <button 
+              onClick={() => setShowTestPanel(!showTestPanel)}
+              className={`px-2 py-1 border text-[10px] uppercase font-medium rounded whitespace-nowrap transition-colors ${showTestPanel ? 'bg-background-secondary border-border-info text-text-primary' : 'bg-background-primary border-border-tertiary hover:bg-background-secondary'}`}
+              title="Open test call panel"
+            >
+              Test
+            </button>
           </div>
           {testStatus && (
             <div className={`text-[10px] mt-2 font-medium ${testStatus === 'ok' ? 'text-green-600' : testStatus === 'error' ? 'text-red-600' : 'text-text-secondary'}`}>
@@ -177,6 +215,38 @@ export default function AIConfigPanel({ title, config, setConfig }) {
             </div>
           )}
         </div>
+
+        {/* Custom Test Call Panel */}
+        {showTestPanel && (
+          <div className="mt-4 pt-4 border-t border-border-tertiary space-y-3">
+            <div>
+              <label className="block text-[10px] font-medium text-text-secondary uppercase mb-1">Test Prompt</label>
+              <textarea 
+                value={testPrompt}
+                onChange={e => setTestPrompt(e.target.value)}
+                className="w-full p-2 bg-background-primary border border-border-tertiary rounded text-xs focus:outline-none focus:border-border-info min-h-[60px]"
+                placeholder="Enter a prompt to send to the model..."
+              />
+            </div>
+            
+            <button 
+              onClick={handleTestCall}
+              disabled={isTestingCall || !config.model || !testPrompt.trim()}
+              className="w-full py-2 bg-background-secondary hover:bg-background-tertiary border border-border-tertiary text-xs font-medium rounded transition-colors disabled:opacity-50"
+            >
+              {isTestingCall ? 'Sending...' : 'Send Test Call'}
+            </button>
+            
+            {testResponse && (
+              <div>
+                <label className="block text-[10px] font-medium text-text-secondary uppercase mb-1">Response</label>
+                <div className="w-full p-2 bg-background-primary border border-border-tertiary rounded text-xs whitespace-pre-wrap overflow-y-auto max-h-[150px]">
+                  {testResponse}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

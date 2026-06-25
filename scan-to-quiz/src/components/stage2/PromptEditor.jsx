@@ -1,17 +1,26 @@
-import React, { useState } from 'react';
-import useAppStore, { selectOcrPrompt, selectOcrReviewPrompt, selectOcrReviewConfig } from '../../store/useAppStore';
+import { useState } from 'react';
+import useAppStore, { selectOcrPrompt, selectOcrReviewPrompt } from '../../store/useAppStore';
+import { OCR_DEFAULT, OCR_REVIEW_DEFAULT } from '../../prompts/ocrPrompt';
 
 export default function PromptEditor() {
   const ocrPrompt = useAppStore(selectOcrPrompt);
   const ocrReviewPrompt = useAppStore(selectOcrReviewPrompt);
-  const ocrReviewConfig = useAppStore(selectOcrReviewConfig);
   
   const setOcrPrompt = useAppStore(s => s.setOcrPrompt);
   const setOcrReviewPrompt = useAppStore(s => s.setOcrReviewPrompt);
-  const setOcrReviewConfig = useAppStore(s => s.setOcrReviewConfig);
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('extraction');
+
+  const handleRestoreDefault = () => {
+    if (window.confirm('Are you sure you want to restore the default prompt?')) {
+      if (activeTab === 'extraction') {
+        setOcrPrompt(OCR_DEFAULT);
+      } else {
+        setOcrReviewPrompt(OCR_REVIEW_DEFAULT);
+      }
+    }
+  };
 
   return (
     <div className="bg-background-secondary border border-border-tertiary rounded-lg mb-4 overflow-hidden">
@@ -49,30 +58,36 @@ export default function PromptEditor() {
                   onChange={(e) => setOcrPrompt(e.target.value)}
                   className="w-full h-64 p-3 font-mono text-[11px] border border-border-tertiary rounded bg-background-primary"
                 />
-                <p className="text-[10px] text-text-secondary mt-2">
-                  This prompt is sent to the Vision model for every page to guide the initial text extraction.
-                </p>
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-[10px] text-text-secondary">
+                    This prompt is sent to the Vision model for every page to guide the initial text extraction.
+                  </p>
+                  <button
+                    onClick={handleRestoreDefault}
+                    className="px-2 py-1 text-[10px] font-medium border border-border-tertiary rounded bg-background-primary hover:bg-background-secondary text-text-secondary hover:text-text-primary transition-colors duration-150 ml-4 whitespace-nowrap"
+                  >
+                    ↻ Restore Default
+                  </button>
+                </div>
               </>
             ) : (
               <>
-                <div className="mb-3">
-                  <label className="block text-[10px] text-text-secondary mb-1">Text Review Model</label>
-                  <input 
-                    type="text" 
-                    value={ocrReviewConfig.model} 
-                    onChange={(e) => setOcrReviewConfig({ model: e.target.value })}
-                    className="w-full px-2 py-1 text-xs border border-border-tertiary rounded bg-background-primary"
-                    placeholder="e.g. llama3.1"
-                  />
-                </div>
                 <textarea 
                   value={ocrReviewPrompt}
                   onChange={(e) => setOcrReviewPrompt(e.target.value)}
                   className="w-full h-48 p-3 font-mono text-[11px] border border-border-tertiary rounded bg-background-primary"
                 />
-                <p className="text-[10px] text-text-secondary mt-2">
-                  This prompt is used when you click "Refine Text" to clean up OCR artifacts using a faster text model.
-                </p>
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-[10px] text-text-secondary">
+                    This prompt is used when you click "Refine Text" to clean up OCR artifacts using a faster text model.
+                  </p>
+                  <button
+                    onClick={handleRestoreDefault}
+                    className="px-2 py-1 text-[10px] font-medium border border-border-tertiary rounded bg-background-primary hover:bg-background-secondary text-text-secondary hover:text-text-primary transition-colors duration-150 ml-4 whitespace-nowrap"
+                  >
+                    ↻ Restore Default
+                  </button>
+                </div>
               </>
             )}
           </div>

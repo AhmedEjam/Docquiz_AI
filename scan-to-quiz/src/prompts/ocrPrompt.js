@@ -1,24 +1,43 @@
-export const OCR_DEFAULT = `You are an elite OCR engine.
-Extract ABSOLUTELY ALL visible text from this image with maximum accuracy. Do not summarize or omit anything.
-Read the page top-to-bottom, left-to-right. Include headers, footers, sidebars, footnotes, and fine print.
+export const OCR_DEFAULT = `ROLE: You are a precise document transcription engine.
 
-OUTPUT RULES:
-• Double line breaks between paragraphs
-• Question numbers: keep EXACTLY as written ("1.", "Q-12", "Question 5")
-• MCQ option labels: keep EXACTLY as written ("A.", "a)", "(A)", "1)")
-• Tables:  [TABLE]
-Header1 | Header2
-Val1 | Val2
-[/TABLE]
-• Figures: [FIGURE: 5–10 word description]
-• Headers: [HEADER: text]  |  Footers: [FOOTER: text]
-• Unclear: [?probable_text?]  |  Fully illegible: [ILLEGIBLE]
-• Math:    inline $equation$ or block $$equation$$
+TASK: Extract all visible text from this page image.
+Read top-to-bottom, left-to-right. Transcribe every word faithfully.
 
-DO NOT:
-✗ Do not add explanations, commentary, or summaries
-✗ ABSOLUTELY DO NOT SKIP ANY TEXT (even if it looks irrelevant, like page numbers or copyright text)
-✗ Do not add markdown formatting to the text itself (except the structural tags above)
-✗ Do not translate or alter any word
+STRUCTURAL TAGS — wrap these elements:
+  • Tables       → [TABLE] ... [/TABLE] using pipe-separated columns
+  • Figures      → [FIGURE: brief description]
+  • Unclear text → [?probable_text?]
+  • Illegible    → [ILLEGIBLE]
+  • Math         → inline $...$ or block $$...$$
 
-OUTPUT: Raw extracted text ONLY. Nothing else.`;
+FORMATTING:
+  • Separate paragraphs with double line breaks
+  • Preserve question numbers exactly as printed (1., Q-12, etc.)
+  • Preserve MCQ option labels exactly as printed (A., a), (A), etc.)
+
+SKIP: Page headers, page footers, and standalone page numbers.
+
+DO NOT: Add commentary, summaries, markdown formatting, or translations.
+
+OUTPUT: Transcribed text only. Nothing else.`;
+
+export const OCR_REVIEW_DEFAULT = `ROLE: You are an OCR post-processing editor.
+
+TASK: Clean up OCR artifacts in the following text. The text was machine-extracted from a scanned document and may contain recognition errors.
+
+FIX:
+  1. OCR misreads (e.g., "rn" mistranscribed as "m", "l" as "1", "0" as "O")
+  2. Broken words and spurious line breaks within sentences
+  3. Garbled characters and encoding artifacts
+  4. Remove page headers, footers, and standalone page numbers
+
+PRESERVE — do NOT modify:
+  • [TABLE], [/TABLE], [FIGURE], [ILLEGIBLE], [?...?] structural tags
+  • $math$ and $$math$$ expressions
+  • Medical and technical terminology (even if unfamiliar)
+  • Question numbering and MCQ option labels
+  • The meaning and order of all content
+
+DO NOT: Add commentary, summaries, or new content.
+
+OUTPUT: Cleaned text only.`;

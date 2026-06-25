@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { OCR_DEFAULT } from '../prompts/ocrPrompt';
+import { OCR_DEFAULT, OCR_REVIEW_DEFAULT } from '../prompts/ocrPrompt';
 import { EXT_DEFAULT, GEN_DEFAULT, REV_DEFAULT } from '../prompts/mcqPrompts';
 import { getDefaultProviderConfig } from '../config/aiProviders';
 
@@ -19,7 +19,7 @@ const useAppStore = create((set) => ({
   pages: [], // { num, text, thumb }[]
   sections: [], // { id, name, startPage, endPage, chapterNum }[]
   splitPoints: [], // page numbers where split occurs
-  gridCols: 2,
+  gridCols: 10,
   thumbScale: 1.0,
   excludedPages: new Set(),
   excludedSections: new Set(),
@@ -49,20 +49,18 @@ const useAppStore = create((set) => ({
   // Stage 2
   ocrConfig: { concurrency: 2, includeDividers: false },
   ocrPrompt: OCR_DEFAULT,
-  ocrReviewConfig: { model: 'llama3.1' },
-  ocrReviewPrompt: "You are an expert editor. Review the following OCR extracted text. Fix any obvious typos, artifact glitches, or formatting errors. Do not change the meaning or remove content. Output ONLY the corrected text without any chat wrap or introductions.",
+  ocrReviewPrompt: OCR_REVIEW_DEFAULT,
   ocrResults: {}, // sectionId -> { text, status, flagged }
   
   setOcrConfig: (config) => set((s) => ({ ocrConfig: { ...s.ocrConfig, ...config } })),
   setOcrPrompt: (prompt) => set({ ocrPrompt: prompt }),
-  setOcrReviewConfig: (config) => set((s) => ({ ocrReviewConfig: { ...s.ocrReviewConfig, ...config } })),
   setOcrReviewPrompt: (prompt) => set({ ocrReviewPrompt: prompt }),
   setOcrResult: (id, r) => set((s) => ({ ocrResults: { ...s.ocrResults, [id]: r } })),
   setAllOcrResults: (results) => set({ ocrResults: results }),
   updateOcrResultText: (id, text) => set((s) => ({ ocrResults: { ...s.ocrResults, [id]: { ...s.ocrResults[id], text } } })),
 
   // Stage 3
-  mcqConfig: { reviewEnabled: false },
+  mcqConfig: { reviewEnabled: false, promptMode: 'detailed' },
   mcqPrompts: { extraction: EXT_DEFAULT, generation: GEN_DEFAULT, review: REV_DEFAULT },
   mcqResults: [], // flat MCQ[]
   exportFilename: '',
@@ -99,7 +97,6 @@ export const selectExcludedSections= (s) => s.excludedSections;
 export const selectOriginalPdfFile = (s) => s.originalPdfFile;
 export const selectOcrConfig      = (s) => s.ocrConfig;
 export const selectOcrPrompt      = (s) => s.ocrPrompt;
-export const selectOcrReviewConfig = (s) => s.ocrReviewConfig;
 export const selectOcrReviewPrompt = (s) => s.ocrReviewPrompt;
 export const selectOcrResults     = (s) => s.ocrResults;
 export const selectMcqConfig      = (s) => s.mcqConfig;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import useAppStore, { selectSections, selectOcrResults, selectExportFilename, selectOcrProvider, selectOcrReviewConfig, selectOcrReviewPrompt } from '../../store/useAppStore';
+import useAppStore, { selectSections, selectOcrResults, selectExportFilename, selectOcrProvider, selectOcrReviewPrompt } from '../../store/useAppStore';
 import { chatComplete } from '../../services/aiClient';
 import { saveOcrResult, loadOcrImages } from '../../utils/sessionCache';
 import JSZip from 'jszip';
@@ -11,7 +11,6 @@ export default function TextReview() {
   const updateOcrResultText = useAppStore(s => s.updateOcrResultText);
   const exportFilename = useAppStore(selectExportFilename);
   const ocrProvider = useAppStore(selectOcrProvider);
-  const ocrReviewConfig = useAppStore(selectOcrReviewConfig);
   const ocrReviewPrompt = useAppStore(selectOcrReviewPrompt);
   const setOcrResult = useAppStore(s => s.setOcrResult);
 
@@ -52,8 +51,7 @@ export default function TextReview() {
     setOcrResult(secId, { ...res, status: 'refining' });
 
     try {
-      const providerConfig = { ...ocrProvider, model: ocrReviewConfig.model || ocrProvider.model };
-      const refinedText = await chatComplete(providerConfig, ocrReviewPrompt, res.text);
+      const refinedText = await chatComplete(ocrProvider, ocrReviewPrompt, res.text);
       const payload = { text: refinedText, status: 'refined', flagged: false };
       setOcrResult(secId, payload);
       saveOcrResult(secId, payload);
